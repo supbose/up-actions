@@ -1,0 +1,20 @@
+name: '我的自定义操作'
+description: '一个示例自定义 GitHub Action'
+author: 'supbose'
+
+inputs:
+  message:
+    description: '要输出的消息'
+    required: false
+    default: 'Hello World'
+  file-path:
+    description: '文件路径'
+    required: false
+
+outputs:
+  result:
+    description: '操作结果'
+
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
