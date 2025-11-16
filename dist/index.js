@@ -40204,7 +40204,7 @@ async function run() {
                         host: ftpHost,
                         user: ftpUsername,
                         password: ftpPassword,
-                        serverDir: joinPathEnd(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
+                        serverDir: joinPathEnd(ftpServerDir) + `v${version}/` || `download/v${version}/`
                     });
                     core.setOutput('ftp-upload-success', 'true');
                     // 显示统一提示消息
@@ -40424,7 +40424,7 @@ async function getID(options, latestJsonAsset, baseUrl) {
         // 使用提取的基础URL进行替换
         contentStr = contentStr.replace(
             new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-            `https://cdn.ali.yiruan.wang/uploads/v${version}`,
+            `https://cdn.ali.yiruan.wang/download/v${version}`,
         )
 
         // console.log('contentStr:', contentStr)
@@ -40464,7 +40464,7 @@ async function getID(options, latestJsonAsset, baseUrl) {
             username: ftpUsername,
             password: ftpPassword,
             'local-dir': joinPathEnd(outputDir),
-            'server-dir': '/vitesse-nuxt-tauri/',
+            'server-dir': '/updater/',
             exclude: [...dist_module.excludeDefaults, 'dontDeployThisFolder/**']
         }).then(() => {
             console.log('🚀 Deploy done!');
