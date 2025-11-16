@@ -1,6 +1,14 @@
 # Changelog
 
 
+## v1.0.3-beta.2
+
+[compare changes](https://github.com/supbose/up-actions/compare/v1.0.3-beta.1...v1.0.3-beta.2)
+
+### 🩹 修复
+
+- **ftp-upload:** 格式化本地目录路径 ([dd9d3b0](https://github.com/supbose/up-actions/commit/dd9d3b0))
+
 ## v1.0.3-beta.1
 
 [compare changes](https://github.com/supbose/up-actions/compare/v1.0.2...v1.0.3-beta.1)
