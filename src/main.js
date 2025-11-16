@@ -457,10 +457,10 @@ async function getID(options, latestJsonAsset, baseUrl) {
 
         // 写入修改后的内容到文件
         fs.writeFileSync(outputPath, modifiedContent)
-        console.log(`已将 latest.json 内容写入到本地文件（已替换CDN链接）: ${updateoutput}`)
+        console.log(`已将 latest.json 内容写入到本地文件（已替换CDN链接）: ${outputDir}`)
 
         // 设置输出变量，供后续步骤使用
-        core.setOutput('latest-json-path', updateoutput);
+        core.setOutput('latest-json-path', outputDir);
 
         const ftpHost = core.getInput('ftp-host');
         const ftpUsername = core.getInput('ftp-username');
@@ -470,7 +470,7 @@ async function getID(options, latestJsonAsset, baseUrl) {
             server: ftpHost,
             username: ftpUsername,
             password: ftpPassword,
-            'local-dir': joinPathEnd(updateoutput),
+            'local-dir': joinPathEnd(outputDir),
             'server-dir': '/vitesse-nuxt-tauri/',
             exclude: [...excludeDefaults, 'dontDeployThisFolder/**']
         }).then(() => {
