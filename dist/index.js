@@ -336,7 +336,6 @@ async function updateAndUploadLatestJson(release, targetVersion) {
         const baseUrl = latestJsonAsset.browser_download_url.split('/').slice(0, -1).join('/');
         console.log('Base URL:', baseUrl);
         const contentStr = await getReleaseAssetContent(repoInfo, latestJsonAsset);
-        console.log('contentStr:', contentStr);
         let contentJson;
         try {
             contentJson = JSON.parse(contentStr);
@@ -347,9 +346,7 @@ async function updateAndUploadLatestJson(release, targetVersion) {
         }
         const version = contentJson.version || targetVersion;
         console.log('Version:', version);
-        console.log('Content JSON:', contentJson);
         const updatedContent = contentStr.replace(new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `https://cdn.ali.yiruan.wang/download/v${version}`);
-        console.log('Updated Content:', updatedContent);
         const outputDir = 'updateoutput';
         if (!createDirectory(outputDir)) {
             throw new Error(`Failed to create output directory: ${outputDir}`);

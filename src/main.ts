@@ -376,23 +376,12 @@ async function getReleaseAssetContent(options: RepositoryInfo, asset: ReleaseAss
       },
     });
 
-    // console.log('Asset content:', response.data)
-
-    // console.log('Asset content JSON:', JSON.stringify(response.data));
+  
 
     let content: Buffer;
-    // if (Buffer.isBuffer(response.data)) {
-    //   content = response.data;
-    // } else if (typeof response.data === 'string') {
-    //   content = Buffer.from(response.data);
-    // } else {
-    //   content = Buffer.from(JSON.stringify(response.data));
-    // }
-    // content = Buffer.isBuffer(response.data)
-    //   ? response.data
-    //   : Buffer.from(response.data as string)
+    
 
-    // let content: Buffer;
+   
     if (Buffer.isBuffer(response.data)) {
       content = response.data;
     } else if (typeof response.data === 'string') {
@@ -435,7 +424,7 @@ async function updateAndUploadLatestJson(release: Release, targetVersion: string
     // Get the content of latest.json
     const contentStr = await getReleaseAssetContent(repoInfo, latestJsonAsset);
 
-    console.log('contentStr:', contentStr);
+    // console.log('contentStr:', contentStr);
     
     // Parse JSON to get version info
     let contentJson: LatestJsonContent;
@@ -449,7 +438,7 @@ async function updateAndUploadLatestJson(release: Release, targetVersion: string
     const version = contentJson.version || targetVersion;
     console.log('Version:', version);
 
-    console.log('Content JSON:', contentJson);
+    // console.log('Content JSON:', contentJson);
 
     // Replace base URL with CDN URL
     const updatedContent = contentStr.replace(
@@ -458,7 +447,7 @@ async function updateAndUploadLatestJson(release: Release, targetVersion: string
     );
 
 
-    console.log('Updated Content:', updatedContent);
+    // console.log('Updated Content:', updatedContent);
     // Save updated content to file
     const outputDir = 'updateoutput';
     if (!createDirectory(outputDir)) {
