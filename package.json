@@ -1,10 +1,12 @@
 {
   "name": "up-actions",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "src/main.js",
   "scripts": {
-    "package": "ncc build src/main.js -o dist"
+    "package": "ncc build src/main.js -o dist",
+    "mbump": "mbump",
+    "build": "pnpm package && pnpm mbump"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
@@ -14,6 +16,7 @@
     "dotenv": "^17.2.3"
   },
   "devDependencies": {
+    "@mznjs/mbump": "^1.0.6",
     "@vercel/ncc": "^0.38.4"
   },
   "keywords": [],
