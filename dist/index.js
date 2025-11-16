@@ -34185,12 +34185,16 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 function uploadToFTP(localDir, ftpConfig) {
     return new Promise((resolve, reject) => {
 
+        console.log('FTP Config:', ftpConfig);
+
+        console.log('Local Dir:', localDir);
+
         console.log('🚚 Deploy started')
         ;(0,_samkirkland_ftp_deploy__WEBPACK_IMPORTED_MODULE_0__.deploy)({
             server: ftpConfig.host,
             username: ftpConfig.user,
             password: ftpConfig.password,
-            'local-dir': localDir,
+            'local-dir': localDir+'/',
             'server-dir': ftpConfig.serverDir || '/',
             exclude: [..._samkirkland_ftp_deploy__WEBPACK_IMPORTED_MODULE_0__.excludeDefaults, 'dontDeployThisFolder/**']
         })
