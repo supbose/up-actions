@@ -210,7 +210,7 @@ async function uploadToFTP(localDir, ftpConfig) {
             server: ftpConfig.host,
             username: ftpConfig.user,
             password: ftpConfig.password,
-            'local-dir': localDir,
+            'local-dir': formatPath(localDir),
             'server-dir': ftpConfig.serverDir || '/',
             exclude: [...ftp_deploy_1.excludeDefaults, 'dontDeployThisFolder/**']
         };

@@ -264,7 +264,7 @@ async function uploadToFTP(localDir: string, ftpConfig: FtpConfig): Promise<Depl
       server: ftpConfig.host,
       username: ftpConfig.user,
       password: ftpConfig.password,
-      'local-dir': localDir,
+      'local-dir': formatPath(localDir),
       'server-dir': ftpConfig.serverDir || '/',
       exclude: [...excludeDefaults, 'dontDeployThisFolder/**']
     };
