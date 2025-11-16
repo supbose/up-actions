@@ -302,6 +302,8 @@ async function getReleaseAssetContent(options, asset) {
                 'X-GitHub-Api-Version': '2022-11-28',
             },
         });
+        console.log('Asset content:', response.data);
+        console.log('Asset content JSON:', JSON.stringify(response.data));
         let content;
         if (Buffer.isBuffer(response.data)) {
             content = response.data;
@@ -330,6 +332,7 @@ async function updateAndUploadLatestJson(release, targetVersion) {
         const baseUrl = latestJsonAsset.browser_download_url.split('/').slice(0, -1).join('/');
         console.log('Base URL:', baseUrl);
         const contentStr = await getReleaseAssetContent(repoInfo, latestJsonAsset);
+        console.log('contentStr:', contentStr);
         let contentJson;
         try {
             contentJson = JSON.parse(contentStr);

@@ -376,6 +376,10 @@ async function getReleaseAssetContent(options: RepositoryInfo, asset: ReleaseAss
       },
     });
 
+    console.log('Asset content:', response.data)
+
+    console.log('Asset content JSON:', JSON.stringify(response.data));
+
     let content: Buffer;
     if (Buffer.isBuffer(response.data)) {
       content = response.data;
@@ -413,6 +417,8 @@ async function updateAndUploadLatestJson(release: Release, targetVersion: string
 
     // Get the content of latest.json
     const contentStr = await getReleaseAssetContent(repoInfo, latestJsonAsset);
+
+    console.log('contentStr:', contentStr);
     
     // Parse JSON to get version info
     let contentJson: LatestJsonContent;
