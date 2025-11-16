@@ -1,6 +1,23 @@
 # Changelog
 
 
+## v1.0.3-beta.4
+
+[compare changes](https://github.com/supbose/up-actions/compare/v1.0.3-beta.3...v1.0.3-beta.4)
+
+### 🚀 特性
+
+- **dist:** 添加 content json 日志输出 ([485e4cf](https://github.com/supbose/up-actions/commit/485e4cf))
+- **logging:** 添加调试日志以追踪资源内容获取与解析过程 ([bc77338](https://github.com/supbose/up-actions/commit/bc77338))
+
+### 🩹 修复
+
+- **main:** 改进 release asset 内容处理逻辑 ([61586f1](https://github.com/supbose/up-actions/commit/61586f1))
+
+### 💅 重构
+
+- **logging:** 移除调试用的 console.log 输出 ([242d315](https://github.com/supbose/up-actions/commit/242d315))
+
 ## v1.0.3-beta.3
 
 [compare changes](https://github.com/supbose/up-actions/compare/v1.0.3-beta.2...v1.0.3-beta.3)
