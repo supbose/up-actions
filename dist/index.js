@@ -40379,6 +40379,9 @@ async function getReleaseUpdater(options) {
 
 async function getID(options, latestJsonAsset, baseUrl) {
     try {
+        const octokit = new Octokit({
+            auth: gettoken,
+        })
         // 使用 GitHub API 直接获取私有资产
         const res = await octokit.request('GET /repos/{owner}/{repo}/releases/assets/{asset_id}', {
             ...options,
