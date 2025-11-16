@@ -295,17 +295,21 @@ async function getReleaseAssetContent(options, asset) {
                 'X-GitHub-Api-Version': '2022-11-28',
             },
         });
-        console.log('Asset content:', response.data);
-        console.log('Asset content JSON:', JSON.stringify(response.data));
         let content;
         if (Buffer.isBuffer(response.data)) {
             content = response.data;
         }
         else if (typeof response.data === 'string') {
+            content = Buffer.from(response.data, 'utf-8');
+        }
+        else if (response.data instanceof ArrayBuffer) {
             content = Buffer.from(response.data);
         }
+        else if (ArrayBuffer.isView(response.data)) {
+            content = Buffer.from(response.data.buffer, response.data.byteOffset, response.data.byteLength);
+        }
         else {
-            content = Buffer.from(JSON.stringify(response.data));
+            content = Buffer.from(JSON.stringify(response.data), 'utf-8');
         }
         return content.toString('utf-8');
     }

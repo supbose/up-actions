@@ -376,17 +376,34 @@ async function getReleaseAssetContent(options: RepositoryInfo, asset: ReleaseAss
       },
     });
 
-    console.log('Asset content:', response.data)
+    // console.log('Asset content:', response.data)
 
-    console.log('Asset content JSON:', JSON.stringify(response.data));
+    // console.log('Asset content JSON:', JSON.stringify(response.data));
 
     let content: Buffer;
+    // if (Buffer.isBuffer(response.data)) {
+    //   content = response.data;
+    // } else if (typeof response.data === 'string') {
+    //   content = Buffer.from(response.data);
+    // } else {
+    //   content = Buffer.from(JSON.stringify(response.data));
+    // }
+    // content = Buffer.isBuffer(response.data)
+    //   ? response.data
+    //   : Buffer.from(response.data as string)
+
+    // let content: Buffer;
     if (Buffer.isBuffer(response.data)) {
       content = response.data;
     } else if (typeof response.data === 'string') {
+      content = Buffer.from(response.data, 'utf-8');
+    } else if (response.data instanceof ArrayBuffer) {
       content = Buffer.from(response.data);
+    } else if (ArrayBuffer.isView(response.data)) {
+      content = Buffer.from(response.data.buffer, response.data.byteOffset, response.data.byteLength);
     } else {
-      content = Buffer.from(JSON.stringify(response.data));
+      // 如果以上都不是，尝试序列化成 JSON 字符串再转 buffer（兜底方案）
+      content = Buffer.from(JSON.stringify(response.data), 'utf-8');
     }
 
     return content.toString('utf-8');
