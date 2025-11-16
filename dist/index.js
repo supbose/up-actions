@@ -34143,7 +34143,7 @@ async function run() {
                         host: ftpHost,
                         user: ftpUsername,
                         password: ftpPassword,
-                        serverDir: ftpServerDir || `uploads/v${version}/`
+                        serverDir: `ftpServerDir/v${version}/` || `uploads/v${version}/`
                     });
                     core.setOutput('ftp-upload-success', 'true');
                     console.log("Built-in FTP upload completed successfully");
@@ -34194,8 +34194,8 @@ function uploadToFTP(localDir, ftpConfig) {
             server: ftpConfig.host,
             username: ftpConfig.user,
             password: ftpConfig.password,
-            'local-dir': localDir+'/',
-            'server-dir': ftpConfig.serverDir || '/',
+            'local-dir': joinPath(localDir),
+            'server-dir': joinPath(ftpConfig.serverDir),
             exclude: [..._samkirkland_ftp_deploy__WEBPACK_IMPORTED_MODULE_0__.excludeDefaults, 'dontDeployThisFolder/**']
         })
         console.log('🚀 Deploy done!')
@@ -34203,6 +34203,13 @@ function uploadToFTP(localDir, ftpConfig) {
     });
 }
 
+async function joinPath(dir= '/') {
+    if (dir !== '/') {
+        // 移除现有的前后斜杠，然后重新加上
+        return `/${dir.replace(/^\/+|\/+$/g, '')}/`
+    }
+    return '/'
+}
 run();
 })();
 
