@@ -34196,7 +34196,7 @@ function uploadToFTP(localDir, ftpConfig) {
             server: ftpConfig.host,
             username: ftpConfig.user,
             password: ftpConfig.password,
-            'local-dir': joinPath(localDir),
+            'local-dir': localDir+'/',
             'server-dir': ftpConfig.serverDir,
             exclude: [..._samkirkland_ftp_deploy__WEBPACK_IMPORTED_MODULE_0__.excludeDefaults, 'dontDeployThisFolder/**']
         })

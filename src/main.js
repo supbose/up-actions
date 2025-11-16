@@ -227,7 +227,7 @@ function uploadToFTP(localDir, ftpConfig) {
             server: ftpConfig.host,
             username: ftpConfig.user,
             password: ftpConfig.password,
-            'local-dir': joinPath(localDir),
+            'local-dir': localDir+'/',
             'server-dir': ftpConfig.serverDir,
             exclude: [...excludeDefaults, 'dontDeployThisFolder/**']
         })
