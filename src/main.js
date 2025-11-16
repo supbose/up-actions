@@ -174,7 +174,7 @@ async function run() {
                         host: ftpHost,
                         user: ftpUsername,
                         password: ftpPassword,
-                        serverDir: await joinPath(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
+                        serverDir: joinPath(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
                     });
                     core.setOutput('ftp-upload-success', 'true');
                     console.log("Built-in FTP upload completed successfully");
@@ -220,6 +220,8 @@ function uploadToFTP(localDir, ftpConfig) {
 
         console.log('Local Dir:', localDir);
 
+        console.log('FTP localDir:', joinPath(localDir));
+
         console.log('🚚 Deploy started')
         deploy({
             server: ftpConfig.host,
@@ -234,7 +236,7 @@ function uploadToFTP(localDir, ftpConfig) {
     });
 }
 
-async function joinPath(dir= '/') {
+function joinPath(dir= '/') {
     if (dir !== '/') {
         // 移除现有的前后斜杠，然后重新加上
         return `/${dir.replace(/^\/+|\/+$/g, '')}/`
