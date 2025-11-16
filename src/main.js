@@ -174,7 +174,7 @@ async function run() {
                         host: ftpHost,
                         user: ftpUsername,
                         password: ftpPassword,
-                        serverDir: joinPath(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
+                        serverDir: joinPathEnd(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
                     });
                     core.setOutput('ftp-upload-success', 'true');
                     console.log("Built-in FTP upload completed successfully");
@@ -216,18 +216,18 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 function uploadToFTP(localDir, ftpConfig) {
     return new Promise((resolve, reject) => {
 
-        console.log('FTP Config:', ftpConfig);
+        // console.log('FTP Config:', ftpConfig);
 
-        console.log('Local Dir:', localDir);
+        // console.log('Local Dir:', localDir);
 
-        console.log('FTP localDir:', joinPath(localDir));
+        // console.log('FTP localDir:', joinPath(localDir));
 
         console.log('🚚 Deploy started')
         deploy({
             server: ftpConfig.host,
             username: ftpConfig.user,
             password: ftpConfig.password,
-            'local-dir': localDir+'/',
+            'local-dir': joinPathEnd(localDir),
             'server-dir': ftpConfig.serverDir,
             exclude: [...excludeDefaults, 'dontDeployThisFolder/**']
         })
@@ -242,5 +242,8 @@ function joinPath(dir= '/') {
         return `/${dir.replace(/^\/+|\/+$/g, '')}/`
     }
     return '/'
+}
+function joinPathEnd(dir = '/') {
+    return dir && !dir.endsWith('/') ? dir + '/' : dir || '/';
 }
 run();
