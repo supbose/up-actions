@@ -216,7 +216,7 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 function uploadToFTP(localDir, ftpConfig) {
     return new Promise((resolve, reject) => {
 
-        onsole.log('🚚 Deploy started')
+        console.log('🚚 Deploy started')
         deploy({
             server: ftpConfig.host,
             username: ftpConfig.user,

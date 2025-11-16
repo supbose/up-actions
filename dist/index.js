@@ -34185,7 +34185,7 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 function uploadToFTP(localDir, ftpConfig) {
     return new Promise((resolve, reject) => {
 
-        onsole.log('🚚 Deploy started')
+        console.log('🚚 Deploy started')
         ;(0,_samkirkland_ftp_deploy__WEBPACK_IMPORTED_MODULE_0__.deploy)({
             server: ftpConfig.host,
             username: ftpConfig.user,
