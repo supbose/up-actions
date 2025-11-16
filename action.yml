@@ -34,6 +34,11 @@ inputs:
     description: '是否上传Latest版本到FTP服务器'
     required: false
     default: 'disabled'
+  github-token: 
+    description: 'GitHub token for FTP upload'
+    required: false
+    default: ''
+
 
 outputs:
   version:

@@ -16,10 +16,23 @@ async function run() {
         const ftpPassword = core.getInput('ftp-password');
         const ftpServerDir = core.getInput('ftp-server-dir');
         const uploadLatest = core.getInput('upload-latest'); // 新增参数
+        const githubToken = core.getInput('github-token'); // 新增参数
 
         // 验证 enable-ftp 参数值
         if (!['disabled', 'ci', 'use'].includes(enableFtp)) {
             core.setFailed(`Invalid enable-ftp value: ${enableFtp}. Must be one of: disabled, ci, use`);
+            return;
+        }
+
+        if (!['disabled', 'ci', 'use'].includes(uploadLatest)) {
+            core.setFailed(`Invalid upload-latest value: ${uploadLatest}. Must be one of: disabled, ci, use`);
+            return;
+        }
+
+        // 验证 github-token 参数值
+        if (uploadLatest !== 'disabled' && !githubToken) {
+            core.setOutput('upload-latest', 'disabled');
+            core.setFailed(`Invalid github-token value: ${githubToken}. Must be provided when upload-latest is "use"`);
             return;
         }
 
@@ -187,9 +200,9 @@ async function run() {
                     });
                     core.setOutput('ftp-upload-success', 'true');
                     // 显示统一提示消息
-                    if (uploadLatest === 'use') {
+                    if (uploadLatest === 'use' && githubToken) {
                         console.log(`✅ --------------------------------`);
-                        console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
+                        console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${githubToken}`);
                         console.log(`✅ --------------------------------`);
                     }
                    
