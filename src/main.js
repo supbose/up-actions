@@ -1,6 +1,7 @@
 const core = require('@actions/core');
 const fs = require('fs');
 const path = require('path');
+// const Client = require('ftp');
 
 async function run() {
     try {
@@ -8,6 +9,17 @@ async function run() {
         const sourceDir = core.getInput('source-dir');
         const targetRoot = core.getInput('target-root');
         const configFile = core.getInput('config-file');
+        const enableFtp = core.getInput('enable-ftp'); // 支持 disabled, ci, use
+        const ftpHost = core.getInput('ftp-host');
+        const ftpUsername = core.getInput('ftp-username');
+        const ftpPassword = core.getInput('ftp-password');
+        const ftpServerDir = core.getInput('ftp-server-dir');
+
+        // 验证 enable-ftp 参数值
+        if (!['disabled', 'ci', 'use'].includes(enableFtp)) {
+            core.setFailed(`Invalid enable-ftp value: ${enableFtp}. Must be one of: disabled, ci, use`);
+            return;
+        }
 
         // 从 tauri.conf.json 获取版本号
         let version = "0.0.0";
@@ -40,6 +52,7 @@ async function run() {
 
         // 设置输出变量
         core.setOutput('version', version);
+        core.setOutput('enable-ftp', enableFtp);
 
         // 创建目标目录
         const targetDir = path.join(targetRoot, `v${version}`);
@@ -136,6 +149,46 @@ async function run() {
             console.log(`Warning: Failed to verify copied files: ${error.message}`);
         }
 
+        // 根据 enable-ftp 的值决定FTP行为
+        switch (enableFtp) {
+            case 'disabled':
+                console.log("FTP is disabled.");
+                core.setOutput('ftp-upload-success', 'disabled');
+                break;
+                
+            case 'ci':
+                console.log("FTP is enabled for external CI step.");
+                core.setOutput('ftp-upload-success', 'external');
+                break;
+                
+            case 'use':
+                console.log("FTP is enabled and using built-in FTP upload functionality...");
+                if (!ftpHost || !ftpUsername || !ftpPassword) {
+                    core.setFailed("FTP credentials are required when enable-ftp is set to 'use'");
+                    return;
+                }
+                
+                try {
+                    await uploadToFTP(targetDir, {
+                        host: ftpHost,
+                        user: ftpUsername,
+                        password: ftpPassword,
+                        serverDir: ftpServerDir || `uploads/v${version}/`
+                    });
+                    core.setOutput('ftp-upload-success', 'true');
+                    console.log("Built-in FTP upload completed successfully");
+                } catch (error) {
+                    core.setOutput('ftp-upload-success', 'false');
+                    core.setFailed(`Built-in FTP upload failed: ${error.message}`);
+                    return;
+                }
+                break;
+                
+            default:
+                core.setFailed(`Invalid enable-ftp value: ${enableFtp}`);
+                return;
+        }
+
         console.log("Process completed successfully without errors");
     } catch (error) {
         core.setFailed(`Unexpected error occurred: ${error.message}`);
@@ -156,6 +209,83 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
     }
 
     return arrayOfFiles;
+}
+
+// 上传文件到FTP服务器
+function uploadToFTP(localDir, ftpConfig) {
+    return new Promise((resolve, reject) => {
+        const client = new Client();
+        let totalFiles = 0;
+        let uploadedFiles = 0;
+        let errorCount = 0;
+
+        client.on('ready', () => {
+            console.log(`Connected to FTP server: ${ftpConfig.host}`);
+            
+            // 确保远程目录存在
+            client.mkdir(ftpConfig.serverDir, true, (err) => {
+                if (err) {
+                    console.log(`Warning: Could not create remote directory: ${err.message}`);
+                }
+                
+                // 获取本地目录中的所有文件
+                const files = getAllFiles(localDir);
+                totalFiles = files.length;
+                
+                if (totalFiles === 0) {
+                    console.log("No files to upload");
+                    client.end();
+                    resolve();
+                    return;
+                }
+                
+                console.log(`Uploading ${totalFiles} files to ${ftpConfig.serverDir}...`);
+                
+                // 逐个上传文件
+                const uploadFile = (index) => {
+                    if (index >= files.length) {
+                        // 所有文件上传完成
+                        console.log(`FTP upload completed! Files uploaded: ${uploadedFiles}, Errors: ${errorCount}`);
+                        client.end();
+                        resolve();
+                        return;
+                    }
+                    
+                    const file = files[index];
+                    const fileName = path.basename(file);
+                    const remotePath = path.posix.join(ftpConfig.serverDir, fileName).replace(/\\/g, '/');
+                    
+                    client.put(file, remotePath, (err) => {
+                        if (err) {
+                            console.log(`ERROR uploading ${fileName}: ${err.message}`);
+                            errorCount++;
+                        } else {
+                            console.log(`Uploaded: ${fileName}`);
+                            uploadedFiles++;
+                        }
+                        
+                        // 上传下一个文件
+                        uploadFile(index + 1);
+                    });
+                };
+                
+                // 开始上传第一个文件
+                uploadFile(0);
+            });
+        });
+
+        client.on('error', (err) => {
+            console.log(`FTP connection error: ${err.message}`);
+            reject(new Error(`FTP connection failed: ${err.message}`));
+        });
+
+        // 连接到FTP服务器
+        client.connect({
+            host: ftpConfig.host,
+            user: ftpConfig.user,
+            password: ftpConfig.password
+        });
+    });
 }
 
 run();

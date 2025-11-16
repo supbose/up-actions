@@ -1,26 +1,49 @@
-name: '复制构建文件到发布目录'
-description: '将Tauri构建文件复制到带版本号的发布目录'
+name: 'Copy Release Files'
+description: 'Copy Tauri build files to versioned release directory with optional FTP upload'
 inputs:
   source-dir:
-    description: '包含打包文件的源目录'
+    description: 'Source directory containing bundled files'
     required: false
     default: 'src-tauri/target/release/bundle/'
   target-root:
-    description: '发布文件的目标根目录'
+    description: 'Target root directory for release files'
     required: false
     default: 'src-tauri/target/release/fabu/'
   config-file:
-    description: 'tauri.conf.json 文件的路径'
+    description: 'Path to tauri.conf.json'
     required: false
     default: 'src-tauri/tauri.conf.json'
+  enable-ftp:
+    description: 'FTP mode: disabled (default), ci (external FTP step), use (built-in FTP)'
+    required: false
+    default: 'disabled'
+  ftp-host:
+    description: 'FTP server hostname (required when enable-ftp is "use")'
+    required: false
+  ftp-username:
+    description: 'FTP username (required when enable-ftp is "use")'
+    required: false
+  ftp-password:
+    description: 'FTP password (required when enable-ftp is "use")'
+    required: false
+  ftp-server-dir:
+    description: 'Remote directory on FTP server'
+    required: false
+    default: ''
 
 outputs:
   version:
-    description: '从配置文件中提取的应用版本'
+    description: 'Application version extracted from config'
     value: ${{ steps.extract-version.outputs.version }}
   target-dir:
-    description: '带版本号的目标目录完整路径'
+    description: 'Full path to the versioned target directory'
     value: ${{ steps.create-target-dir.outputs.target_dir }}
+  enable-ftp:
+    description: 'Current FTP mode (disabled/ci/use)'
+    value: ${{ steps.main.outputs.enable-ftp }}
+  ftp-upload-success:
+    description: 'FTP upload result (disabled/external/true/false)'
+    value: ${{ steps.main.outputs.ftp-upload-success }}
 
 runs:
   using: 'node16'

@@ -2,13 +2,14 @@
   "name": "up-actions",
   "version": "1.0.0",
   "description": "",
-  "main": "src/main.js",  
+  "main": "src/main.js",
   "scripts": {
     "package": "ncc build src/main.js -o dist"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
-    "@actions/github": "^6.0.1"
+    "@actions/github": "^6.0.1",
+    "@samkirkland/ftp-deploy": "^1.2.5"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.38.4"
