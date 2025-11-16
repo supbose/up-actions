@@ -1,6 +1,508 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 8643:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = run;
+exports.getAllFiles = getAllFiles;
+exports.uploadToFTP = uploadToFTP;
+exports.copyFiles = copyFiles;
+exports.getVersionFromConfig = getVersionFromConfig;
+const core = __importStar(__nccwpck_require__(6966));
+const fs = __importStar(__nccwpck_require__(9896));
+const path = __importStar(__nccwpck_require__(6928));
+const ftp_deploy_1 = __nccwpck_require__(6264);
+__nccwpck_require__(3450);
+const github_1 = __nccwpck_require__(4903);
+const core_1 = __nccwpck_require__(2245);
+let GITHUB_TOKEN;
+function initializeToken() {
+    GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+    if (!GITHUB_TOKEN) {
+        console.log('Warning: GITHUB_TOKEN not found in environment variables');
+    }
+}
+function getAllFiles(dirPath, arrayOfFiles = []) {
+    try {
+        const files = fs.readdirSync(dirPath, { withFileTypes: true });
+        for (const file of files) {
+            const fullPath = path.join(dirPath, file.name);
+            if (file.isDirectory()) {
+                arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);
+            }
+            else {
+                arrayOfFiles.push(fullPath);
+            }
+        }
+        return arrayOfFiles;
+    }
+    catch (error) {
+        console.error(`Error reading directory ${dirPath}:`, error);
+        return arrayOfFiles;
+    }
+}
+function getFileInfo(filePath) {
+    try {
+        const stats = fs.statSync(filePath);
+        return {
+            name: path.basename(filePath),
+            path: filePath,
+            size: stats.size,
+            modified: stats.mtime,
+            isDirectory: stats.isDirectory()
+        };
+    }
+    catch (error) {
+        console.error(`Error getting file info for ${filePath}:`, error);
+        return null;
+    }
+}
+function validateInputs(inputs) {
+    const errors = [];
+    const warnings = [];
+    if (!['disabled', 'ci', 'use'].includes(inputs.enableFtp)) {
+        errors.push(`Invalid enable-ftp value: ${inputs.enableFtp}. Must be one of: disabled, ci, use`);
+    }
+    if (!['disabled', 'ci', 'use'].includes(inputs.uploadLatest)) {
+        errors.push(`Invalid upload-latest value: ${inputs.uploadLatest}. Must be one of: disabled, ci, use`);
+    }
+    if (inputs.uploadLatest !== 'disabled' && !inputs.githubToken) {
+        errors.push('GitHub token is required when upload-latest is not disabled');
+    }
+    if (inputs.enableFtp === 'use') {
+        if (!inputs.ftpHost || !inputs.ftpUsername || !inputs.ftpPassword) {
+            errors.push('FTP credentials are required when enable-ftp is set to "use"');
+        }
+    }
+    return { valid: errors.length === 0, errors, warnings };
+}
+function getVersionFromConfig(configFile) {
+    try {
+        if (!fs.existsSync(configFile)) {
+            console.log(`Warning: Config file not found: ${configFile}`);
+            return "0.0.0";
+        }
+        const configContent = fs.readFileSync(configFile, 'utf8');
+        const config = JSON.parse(configContent);
+        if (config.version) {
+            console.log(`Version from config root: ${config.version}`);
+            return config.version;
+        }
+        if (config.package?.version) {
+            console.log(`Version from package config: ${config.package.version}`);
+            return config.package.version;
+        }
+        console.log("Warning: Version not found in config file");
+        return "0.0.0";
+    }
+    catch (error) {
+        console.log(`Warning: Could not parse config file: ${error}`);
+        return "0.0.0";
+    }
+}
+function createDirectory(dirPath) {
+    try {
+        if (!fs.existsSync(dirPath)) {
+            console.log(`Creating directory: ${dirPath}`);
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+        return fs.existsSync(dirPath);
+    }
+    catch (error) {
+        console.error(`Failed to create directory ${dirPath}:`, error);
+        return false;
+    }
+}
+function copyFiles(sourceDir, targetDir) {
+    try {
+        if (!fs.existsSync(sourceDir)) {
+            throw new Error(`Source directory does not exist: ${sourceDir}`);
+        }
+        console.log(`Source directory exists: ${sourceDir}`);
+        console.log(`Copying files from ${sourceDir} to ${targetDir} (flat structure)`);
+        const files = getAllFiles(sourceDir);
+        let fileCount = 0;
+        let errorCount = 0;
+        for (const file of files) {
+            try {
+                const fileName = path.basename(file);
+                const targetPath = path.join(targetDir, fileName);
+                fs.copyFileSync(file, targetPath);
+                console.log(`Copied: ${fileName}`);
+                fileCount++;
+            }
+            catch (error) {
+                console.error(`ERROR copying ${path.basename(file)}:`, error);
+                errorCount++;
+            }
+        }
+        console.log(`Copy completed! Files copied: ${fileCount}, Errors: ${errorCount}`);
+        if (errorCount > 0) {
+            console.log(`Warning: ${errorCount} file(s) failed to copy`);
+        }
+        return {
+            success: errorCount === 0,
+            version: '',
+            targetDir,
+            filesCopied: fileCount
+        };
+    }
+    catch (error) {
+        throw new Error(`Failed to copy files: ${error}`);
+    }
+}
+function verifyFiles(targetDir) {
+    try {
+        console.log("Verifying files in target directory:");
+        const targetFiles = getAllFiles(targetDir);
+        console.log(`Files in ${targetDir}:`);
+        targetFiles.forEach(file => {
+            const fileInfo = getFileInfo(file);
+            if (fileInfo) {
+                console.log(`${fileInfo.name} - Size: ${fileInfo.size} bytes - Modified: ${fileInfo.modified}`);
+            }
+        });
+        if (targetFiles.length === 0) {
+            console.log("WARNING: No files found in target directory!");
+        }
+        else {
+            console.log(`SUCCESS: ${targetFiles.length} files found in target directory`);
+        }
+    }
+    catch (error) {
+        console.log(`Warning: Failed to verify copied files:`, error);
+    }
+}
+async function uploadToFTP(localDir, ftpConfig) {
+    try {
+        console.log('🚚 FTP Deploy started');
+        const deployOptions = {
+            server: ftpConfig.host,
+            username: ftpConfig.user,
+            password: ftpConfig.password,
+            'local-dir': localDir,
+            'server-dir': ftpConfig.serverDir || '/',
+            exclude: [...ftp_deploy_1.excludeDefaults, 'dontDeployThisFolder/**']
+        };
+        await (0, ftp_deploy_1.deploy)(deployOptions);
+        console.log('🚀 FTP Deploy completed successfully!');
+        return {
+            success: true,
+            message: 'FTP deployment completed successfully',
+            filesDeployed: getAllFiles(localDir).length
+        };
+    }
+    catch (error) {
+        console.error('FTP Deploy failed:', error);
+        return {
+            success: false,
+            message: `FTP deployment failed: ${error}`,
+            filesDeployed: 0,
+            errors: [String(error)]
+        };
+    }
+}
+function formatPath(dir = '/') {
+    return dir && !dir.endsWith('/') ? dir + '/' : dir || '/';
+}
+function getRepositoryInfo() {
+    let owner;
+    let repo;
+    if (process.env.GITHUB_REPOSITORY) {
+        try {
+            const repoInfo = github_1.context.repo;
+            owner = repoInfo.owner;
+            repo = repoInfo.repo;
+            console.log(`Using repository info from context: ${owner}/${repo}`);
+        }
+        catch (error) {
+            const repoParts = process.env.GITHUB_REPOSITORY.split('/');
+            if (repoParts.length === 2) {
+                [owner, repo] = repoParts;
+                console.log(`Using repository info from GITHUB_REPOSITORY: ${owner}/${repo}`);
+            }
+            else {
+                throw new Error('Invalid GITHUB_REPOSITORY format');
+            }
+        }
+    }
+    else {
+        owner = process.env.GITHUB_OWNER || "user";
+        repo = process.env.GITHUB_REPO || "my-tauri-app";
+        console.log(`Using repository info from environment/default: ${owner}/${repo}`);
+        console.log("Note: In a real GitHub Actions environment, this would be automatically detected.");
+    }
+    return { owner, repo };
+}
+async function getLatestRelease(options) {
+    try {
+        const octokit = new core_1.Octokit({
+            auth: GITHUB_TOKEN,
+        });
+        const response = await octokit.request('GET /repos/{owner}/{repo}/releases/latest', {
+            ...options,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28',
+            },
+        });
+        return response.data;
+    }
+    catch (error) {
+        console.error('Error fetching latest release:', error);
+        return null;
+    }
+}
+async function getReleaseAssetContent(options, asset) {
+    try {
+        const octokit = new core_1.Octokit({
+            auth: GITHUB_TOKEN,
+        });
+        const response = await octokit.request('GET /repos/{owner}/{repo}/releases/assets/{asset_id}', {
+            ...options,
+            asset_id: asset.id,
+            headers: {
+                'Accept': 'application/octet-stream',
+                'X-GitHub-Api-Version': '2022-11-28',
+            },
+        });
+        let content;
+        if (Buffer.isBuffer(response.data)) {
+            content = response.data;
+        }
+        else if (typeof response.data === 'string') {
+            content = Buffer.from(response.data);
+        }
+        else {
+            content = Buffer.from(JSON.stringify(response.data));
+        }
+        return content.toString('utf-8');
+    }
+    catch (error) {
+        console.error('Error fetching release asset:', error);
+        throw error;
+    }
+}
+async function updateAndUploadLatestJson(release, targetVersion) {
+    try {
+        const latestJsonAsset = release.assets.find(asset => asset.name === 'latest.json');
+        if (!latestJsonAsset) {
+            console.log('latest.json asset not found');
+            return;
+        }
+        const repoInfo = getRepositoryInfo();
+        const baseUrl = latestJsonAsset.browser_download_url.split('/').slice(0, -1).join('/');
+        console.log('Base URL:', baseUrl);
+        const contentStr = await getReleaseAssetContent(repoInfo, latestJsonAsset);
+        let contentJson;
+        try {
+            contentJson = JSON.parse(contentStr);
+        }
+        catch (parseError) {
+            console.error('Failed to parse latest.json:', parseError);
+            throw parseError;
+        }
+        const version = contentJson.version || targetVersion;
+        console.log('Version:', version);
+        const updatedContent = contentStr.replace(new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `https://cdn.ali.yiruan.wang/download/v${version}`);
+        const outputDir = 'updateoutput';
+        if (!createDirectory(outputDir)) {
+            throw new Error(`Failed to create output directory: ${outputDir}`);
+        }
+        const outputPath = path.join(outputDir, 'latest.json');
+        fs.writeFileSync(outputPath, Buffer.from(updatedContent, 'utf-8'));
+        console.log(`Updated latest.json written to: ${outputDir}`);
+        core.setOutput('latest-json-path', outputDir);
+        const ftpHost = core.getInput('ftp-host');
+        const ftpUsername = core.getInput('ftp-username');
+        const ftpPassword = core.getInput('ftp-password');
+        if (ftpHost && ftpUsername && ftpPassword) {
+            const result = await uploadToFTP(outputDir, {
+                host: ftpHost,
+                user: ftpUsername,
+                password: ftpPassword,
+                serverDir: '/updater/'
+            });
+            if (result.success) {
+                console.log('🚀 Latest.json uploaded successfully!');
+            }
+            else {
+                console.error('Failed to upload latest.json:', result.message);
+            }
+        }
+    }
+    catch (error) {
+        console.error('Error updating and uploading latest.json:', error);
+        throw error;
+    }
+}
+async function uploadLatestVersion(targetVersion) {
+    try {
+        if (!GITHUB_TOKEN) {
+            console.log("GITHUB_TOKEN is required for uploading latest version");
+            return;
+        }
+        const repoInfo = getRepositoryInfo();
+        console.log('Repository info:', repoInfo);
+        const release = await getLatestRelease(repoInfo);
+        if (!release) {
+            console.log('No release found');
+            return;
+        }
+        await updateAndUploadLatestJson(release, targetVersion);
+    }
+    catch (error) {
+        console.error('Error uploading latest version:', error);
+        throw error;
+    }
+}
+async function run() {
+    try {
+        initializeToken();
+        const inputs = {
+            sourceDir: core.getInput('source-dir'),
+            targetRoot: core.getInput('target-root'),
+            configFile: core.getInput('config-file'),
+            enableFtp: core.getInput('enable-ftp'),
+            ftpHost: core.getInput('ftp-host'),
+            ftpUsername: core.getInput('ftp-username'),
+            ftpPassword: core.getInput('ftp-password'),
+            ftpServerDir: core.getInput('ftp-server-dir'),
+            uploadLatest: core.getInput('upload-latest'),
+            githubToken: core.getInput('github-token')
+        };
+        const validation = validateInputs(inputs);
+        if (!validation.valid) {
+            core.setOutput('upload-latest', 'disabled');
+            core.setFailed(`Input validation failed: ${validation.errors.join(', ')}`);
+            return;
+        }
+        const version = getVersionFromConfig(inputs.configFile);
+        console.log(`Using version: ${version}`);
+        core.setOutput('version', version);
+        core.setOutput('enable-ftp', inputs.enableFtp);
+        const targetDir = path.join(inputs.targetRoot, `v${version}`);
+        console.log(`Target directory: ${targetDir}`);
+        try {
+            fs.writeFileSync('version.txt', version, 'utf8');
+        }
+        catch (error) {
+            console.log(`Warning: Failed to save version file:`, error);
+        }
+        if (!createDirectory(targetDir)) {
+            core.setFailed(`Failed to create target directory: ${targetDir}`);
+            return;
+        }
+        core.setOutput('target-dir', targetDir);
+        const copyResult = copyFiles(inputs.sourceDir, targetDir);
+        if (!copyResult.success) {
+            core.setFailed(`Failed to copy files`);
+            return;
+        }
+        verifyFiles(targetDir);
+        if (inputs.uploadLatest === 'disabled') {
+            console.log(`✅ Latest version upload is disabled`);
+        }
+        else if (inputs.uploadLatest === 'ci') {
+            console.log("✅ Using plugin to trigger latest version upload");
+        }
+        else if (inputs.uploadLatest === 'use') {
+            console.log(`✅ Using built-in FTP upload for latest version files`);
+            if (inputs.githubToken) {
+                console.log(`✅ GitHub Token: ${inputs.githubToken}`);
+            }
+        }
+        let ftpUploadSuccess = false;
+        switch (inputs.enableFtp) {
+            case 'disabled':
+                console.log("FTP upload is disabled.");
+                core.setOutput('ftp-upload-success', 'disabled');
+                break;
+            case 'ci':
+                console.log("FTP upload enabled for external CI step.");
+                core.setOutput('ftp-upload-success', 'external');
+                break;
+            case 'use':
+                console.log("FTP upload enabled with built-in functionality...");
+                const uploadResult = await uploadToFTP(targetDir, {
+                    host: inputs.ftpHost,
+                    user: inputs.ftpUsername,
+                    password: inputs.ftpPassword,
+                    serverDir: formatPath(inputs.ftpServerDir) + `v${version}/` || `download/v${version}/`
+                });
+                ftpUploadSuccess = uploadResult.success;
+                core.setOutput('ftp-upload-success', ftpUploadSuccess.toString());
+                if (ftpUploadSuccess && inputs.uploadLatest === 'use' && inputs.githubToken) {
+                    console.log(`✅ --------------------------------`);
+                    console.log(`✅ Using built-in FTP upload for latest version`);
+                    console.log(`✅ GitHub Token: ${inputs.githubToken}`);
+                    console.log(`✅ --------------------------------`);
+                    try {
+                        await uploadLatestVersion(version);
+                        core.setOutput('latest-upload-success', 'true');
+                    }
+                    catch (error) {
+                        core.setOutput('latest-upload-success', 'false');
+                        console.error('Failed to upload latest version:', error);
+                    }
+                }
+                break;
+            default:
+                core.setFailed(`Invalid enable-ftp value: ${inputs.enableFtp}`);
+                return;
+        }
+        console.log("Process completed successfully without errors");
+    }
+    catch (error) {
+        core.setFailed(`Unexpected error occurred: ${error}`);
+    }
+}
+if (require.main === require.cache[eval('__filename')]) {
+    run().catch(error => {
+        console.error('Fatal error:', error);
+        process.exit(1);
+    });
+}
+//# sourceMappingURL=main.js.map
+
+/***/ }),
+
 /***/ 4568:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -38855,63 +39357,18 @@ __webpack_unused_export__ = defaultContentType
 
 /***/ }),
 
-/***/ 4455:
-/***/ ((module) => {
+/***/ 2245:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"dotenv","version":"17.2.3","description":"Loads environment variables from .env file","main":"lib/main.js","types":"lib/main.d.ts","exports":{".":{"types":"./lib/main.d.ts","require":"./lib/main.js","default":"./lib/main.js"},"./config":"./config.js","./config.js":"./config.js","./lib/env-options":"./lib/env-options.js","./lib/env-options.js":"./lib/env-options.js","./lib/cli-options":"./lib/cli-options.js","./lib/cli-options.js":"./lib/cli-options.js","./package.json":"./package.json"},"scripts":{"dts-check":"tsc --project tests/types/tsconfig.json","lint":"standard","pretest":"npm run lint && npm run dts-check","test":"tap run tests/**/*.js --allow-empty-coverage --disable-coverage --timeout=60000","test:coverage":"tap run tests/**/*.js --show-full-coverage --timeout=60000 --coverage-report=text --coverage-report=lcov","prerelease":"npm test","release":"standard-version"},"repository":{"type":"git","url":"git://github.com/motdotla/dotenv.git"},"homepage":"https://github.com/motdotla/dotenv#readme","funding":"https://dotenvx.com","keywords":["dotenv","env",".env","environment","variables","config","settings"],"readmeFilename":"README.md","license":"BSD-2-Clause","devDependencies":{"@types/node":"^18.11.3","decache":"^4.6.2","sinon":"^14.0.1","standard":"^17.0.0","standard-version":"^9.5.0","tap":"^19.2.0","typescript":"^4.8.4"},"engines":{"node":">=12"},"browser":{"fs":false}}');
+// ESM COMPAT FLAG
+__nccwpck_require__.r(__webpack_exports__);
 
-/***/ })
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  Octokit: () => (/* binding */ Octokit)
+});
 
-/******/ 	});
-/************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __nccwpck_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		var threw = true;
-/******/ 		try {
-/******/ 			__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nccwpck_require__);
-/******/ 			threw = false;
-/******/ 		} finally {
-/******/ 			if(threw) delete __webpack_module_cache__[moduleId];
-/******/ 		}
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/compat */
-/******/ 	
-/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
-/******/ 	
-/************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
-
-// EXTERNAL MODULE: ./node_modules/.pnpm/@samkirkland+ftp-deploy@1.2.5/node_modules/@samkirkland/ftp-deploy/dist/module.js
-var dist_module = __nccwpck_require__(6264);
-// EXTERNAL MODULE: ./node_modules/.pnpm/dotenv@17.2.3/node_modules/dotenv/config.js
-var config = __nccwpck_require__(3450);
-// EXTERNAL MODULE: ./node_modules/.pnpm/@actions+github@6.0.1/node_modules/@actions/github/lib/github.js
-var github = __nccwpck_require__(4903);
 ;// CONCATENATED MODULE: ./node_modules/.pnpm/universal-user-agent@7.0.3/node_modules/universal-user-agent/index.js
 function getUserAgent() {
   if (typeof navigator === "object" && "userAgent" in navigator) {
@@ -39990,550 +40447,89 @@ class Octokit {
 }
 
 
-;// CONCATENATED MODULE: ./src/main.js
-const core = __nccwpck_require__(6966);
-const fs = __nccwpck_require__(9896);
-const path = __nccwpck_require__(6928);
 
-
-
-
-
-// const Client = require('ftp');
-
-const gettoken = process.env.GITHUB_TOKEN;
-
-// const token = process.env.GITHUB_TOKEN
-
-
-
-async function run() {
-    try {
-        // 获取输入参数
-        const sourceDir = core.getInput('source-dir');
-        const targetRoot = core.getInput('target-root');
-        const configFile = core.getInput('config-file');
-        const enableFtp = core.getInput('enable-ftp'); // 支持 disabled, ci, use
-        const ftpHost = core.getInput('ftp-host');
-        const ftpUsername = core.getInput('ftp-username');
-        const ftpPassword = core.getInput('ftp-password');
-        const ftpServerDir = core.getInput('ftp-server-dir');
-        const uploadLatest = core.getInput('upload-latest'); // 新增参数
-        const githubToken = core.getInput('github-token'); // 新增参数
-
-        // 验证 enable-ftp 参数值
-        if (!['disabled', 'ci', 'use'].includes(enableFtp)) {
-            core.setFailed(`Invalid enable-ftp value: ${enableFtp}. Must be one of: disabled, ci, use`);
-            return;
-        }
-
-        if (!['disabled', 'ci', 'use'].includes(uploadLatest)) {
-            core.setFailed(`Invalid upload-latest value: ${uploadLatest}. Must be one of: disabled, ci, use`);
-            return;
-        }
-
-        // 验证 github-token 参数值
-        if (uploadLatest !== 'disabled' && !githubToken) {
-            core.setOutput('upload-latest', 'disabled');
-            core.setFailed(`Invalid github-token value: ${githubToken}. Must be provided when upload-latest is "use"`);
-            return;
-        }
-
-        // 从 tauri.conf.json 获取版本号
-        let version = "0.0.0";
-        if (fs.existsSync(configFile)) {
-            try {
-                const configContent = fs.readFileSync(configFile, 'utf8');
-                const config = JSON.parse(configContent);
-
-                // 优先从根级别的version获取
-                if (config.version) {
-                    version = config.version;
-                    console.log(`Version from config root: ${version}`);
-                }
-                // 如果根级别没有version，则尝试从package.version获取
-                else if (config.package && config.package.version) {
-                    version = config.package.version;
-                    console.log(`Version from package config: ${version}`);
-                }
-                else {
-                    console.log("Warning: Version not found in config file");
-                }
-            } catch (error) {
-                console.log(`Warning: Could not parse config file: ${error.message}`);
-            }
-        } else {
-            console.log(`Warning: Config file not found: ${configFile}`);
-        }
-
-        console.log(`Using version: ${version}`);
-
-        // 设置输出变量
-        core.setOutput('version', version);
-        core.setOutput('enable-ftp', enableFtp);
-
-        // 创建目标目录
-        const targetDir = path.join(targetRoot, `v${version}`);
-        console.log(`Target directory: ${targetDir}`);
-
-        // 保存版本到文件供后续步骤使用
-        try {
-            fs.writeFileSync('version.txt', version, 'utf8');
-        } catch (error) {
-            console.log(`Warning: Failed to save version file: ${error.message}`);
-        }
-
-        // 创建目标目录
-        try {
-            console.log(`Creating target directory: ${targetDir}`);
-            fs.mkdirSync(targetDir, { recursive: true });
-
-            // 验证目标目录已创建
-            if (!fs.existsSync(targetDir)) {
-                throw new Error(`Failed to create target directory: ${targetDir}`);
-            }
-            console.log(`Target directory created successfully: ${targetDir}`);
-            core.setOutput('target-dir', targetDir);
-        } catch (error) {
-            core.setFailed(`Failed to create target directory: ${error.message}`);
-            return;
-        }
-
-        // 检查源目录
-        if (!fs.existsSync(sourceDir)) {
-            console.log(`Source directory not found: ${sourceDir}`);
-            const parentDir = path.dirname(sourceDir);
-            if (fs.existsSync(parentDir)) {
-                console.log("Available directories in parent:");
-                const dirs = fs.readdirSync(parentDir, { withFileTypes: true })
-                    .filter(dirent => dirent.isDirectory())
-                    .map(dirent => dirent.name);
-                console.log(dirs);
-            }
-            core.setFailed("Source directory does not exist");
-            return;
-        } else {
-            console.log(`Source directory exists: ${sourceDir}`);
-
-            try {
-                console.log(`Copying files from ${sourceDir} to ${targetDir} (flat structure)`);
-
-                // 获取所有文件（不保留目录结构）
-                const files = getAllFiles(sourceDir);
-                let fileCount = 0;
-                let errorCount = 0;
-
-                for (const file of files) {
-                    try {
-                        // 直接复制到目标目录，不保留子目录结构
-                        const fileName = path.basename(file);
-                        const targetPath = path.join(targetDir, fileName);
-                        fs.copyFileSync(file, targetPath);
-                        console.log(`Copied: ${fileName}`);
-                        fileCount++;
-                    } catch (error) {
-                        console.log(`ERROR copying ${path.basename(file)}: ${error.message}`);
-                        errorCount++;
-                    }
-                }
-
-                console.log(`Copy completed! Files copied: ${fileCount}, Errors: ${errorCount}`);
-
-                if (errorCount > 0) {
-                    console.log(`Warning: ${errorCount} file(s) failed to copy`);
-                }
-            } catch (error) {
-                core.setFailed(`Failed to copy files: ${error.message}`);
-                return;
-            }
-        }
-
-        // 验证复制的文件
-        try {
-            console.log("Verifying files in target directory:");
-            const targetFiles = getAllFiles(targetDir);
-            console.log(`Files in ${targetDir}:`);
-            targetFiles.forEach(file => {
-                const stats = fs.statSync(file);
-                console.log(`${path.basename(file)} - Size: ${stats.size} bytes - Modified: ${stats.mtime}`);
-            });
-
-            if (targetFiles.length === 0) {
-                console.log("WARNING: No files found in target directory!");
-            } else {
-                console.log(`SUCCESS: ${targetFiles.length} files found in target directory`);
-            }
-        } catch (error) {
-            console.log(`Warning: Failed to verify copied files: ${error.message}`);
-        }
-
-        if (uploadLatest === 'disabled') {
-            console.log(`✅ 不需要上传最新版本文件`);
-        } else if (uploadLatest === 'ci') {
-            console.log("✅ 使用插件触发上传最新版本文件");
-        } else if (uploadLatest === 'use') {
-            console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
-            // console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${gettoken}`);
-        } else if (githubToken) {
-            console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${githubToken}`);
-        } else {
-            console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
-        }
-
-        // 根据 enable-ftp 的值决定FTP行为
-        switch (enableFtp) {
-            case 'disabled':
-                console.log("FTP is disabled.");
-                core.setOutput('ftp-upload-success', 'disabled');
-                break;
-
-            case 'ci':
-                console.log("FTP is enabled for external CI step.");
-                core.setOutput('ftp-upload-success', 'external');
-                break;
-
-            case 'use':
-                console.log("FTP is enabled and using built-in FTP upload functionality...");
-                if (!ftpHost || !ftpUsername || !ftpPassword) {
-                    core.setFailed("FTP credentials are required when enable-ftp is set to 'use'");
-                    return;
-                }
-
-                try {
-                    await uploadToFTP(targetDir, {
-                        host: ftpHost,
-                        user: ftpUsername,
-                        password: ftpPassword,
-                        serverDir: joinPathEnd(ftpServerDir) + `v${version}/` || `download/v${version}/`
-                    });
-                    core.setOutput('ftp-upload-success', 'true');
-                    // 显示统一提示消息
-                    if (uploadLatest === 'use' && githubToken) {
-                        console.log(`✅ --------------------------------`);
-                        console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${githubToken}`);
-                        console.log(`✅ --------------------------------`);
-                        await upLatest()
-                    }
-
-                } catch (error) {
-                    core.setOutput('ftp-upload-success', 'false');
-                    core.setFailed(`Built-in FTP upload failed: ${error.message}`);
-                    return;
-                }
-                break;
-
-            default:
-                core.setFailed(`Invalid enable-ftp value: ${enableFtp}`);
-                return;
-        }
-
-        console.log("Process completed successfully without errors");
-    } catch (error) {
-        core.setFailed(`Unexpected error occurred: ${error.message}`);
-    }
-}
-
-// 递归获取目录下的所有文件
-function getAllFiles(dirPath, arrayOfFiles = []) {
-    const files = fs.readdirSync(dirPath, { withFileTypes: true });
-
-    for (const file of files) {
-        const fullPath = path.join(dirPath, file.name);
-        if (file.isDirectory()) {
-            arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);
-        } else {
-            arrayOfFiles.push(fullPath);
-        }
-    }
-
-    return arrayOfFiles;
-}
-
-// 上传文件到FTP服务器
-function uploadToFTP(localDir, ftpConfig) {
-    return new Promise((resolve, reject) => {
-        console.log('🚚 Deploy started');
-
-        (0,dist_module.deploy)({
-            server: ftpConfig.host,
-            username: ftpConfig.user,
-            password: ftpConfig.password,
-            'local-dir': joinPathEnd(localDir),
-            'server-dir': ftpConfig.serverDir,
-            exclude: [...dist_module.excludeDefaults, 'dontDeployThisFolder/**']
-        }).then(() => {
-            console.log('🚀 Deploy done!');
-            resolve();
-        }).catch((error) => {
-            reject(error);
-        });
-    });
-}
-
-function joinPath(dir = '/') {
-    if (dir !== '/') {
-        // 移除现有的前后斜杠，然后重新加上
-        return `/${dir.replace(/^\/+|\/+$/g, '')}/`
-    }
-    return '/'
-}
-
-function joinPathEnd(dir = '/') {
-    return dir && !dir.endsWith('/') ? dir + '/' : dir || '/';
-}
-
-
-
-async function upLatest() {
-
-    if (!gettoken) {
-        console.log("GITHUB_TOKEN is required");
-        process.exit(1);
-    }
-    const octokit = new Octokit({
-        auth: gettoken,
-    })
-
-    // 用户名，仓库名 - 支持本地环境
-    let owner, repo;
-
-    // 检查是否在 GitHub Actions 环境中（有 GITHUB_REPOSITORY 环境变量）
-    if (process.env.GITHUB_REPOSITORY) {
-        // 在 GitHub Actions 环境中，可以安全地使用 context.repo
-        try {
-            owner = github.context.repo.owner;
-            repo = github.context.repo.repo;
-            console.log(`Using repository info from context: ${owner}/${repo}`);
-        } catch (error) {
-            // 如果 context.repo 访问失败，使用 GITHUB_REPOSITORY 环境变量
-            const repoParts = process.env.GITHUB_REPOSITORY.split('/');
-            if (repoParts.length === 2) {
-                [owner, repo] = repoParts;
-                console.log(`Using repository info from GITHUB_REPOSITORY: ${owner}/${repo}`);
-            }
-        }
-    } else {
-        // 本地开发环境，从环境变量获取或使用默认值
-        owner = process.env.GITHUB_OWNER || "user";
-        repo = process.env.GITHUB_REPO || "my-tauri-app";
-        console.log(`Using repository info from environment/default: ${owner}/${repo}`);
-        console.log("Note: In a real GitHub Actions environment, this would be automatically detected.");
-    }
-    const options = { owner, repo };
-
-    console.log(options, 'options')
-
-    const release = await getReleaseUpdater(options)
-
-    // console.log('release:', release)
-
-
-    // console.log('release:', release)
-    // 查找 latest.json 资源
-    const latestJsonAsset = release.assets.find(asset => asset.name === 'latest.json')
-
-    // console.log('latestJsonAsset', latestJsonAsset)
-
-    // 使用字符串分割方式提取基础URL
-    const urlParts = latestJsonAsset.browser_download_url.split('/')
-    const baseUrl = urlParts.slice(0, -1).join('/')
-
-    // 分别提取 owner 和 repo
-    // const match = baseUrl.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)/)
-    // const _owner = match?.[1] || ''
-    // const _repo = match?.[2] || ''
-
-    // console.log('owner:', _owner)
-    // console.log('repo:', _repo)
-
-    if (latestJsonAsset) {
-        await getID(options, latestJsonAsset, baseUrl)
-    }
-    else {
-        console.log('未找到 latest.json 文件')
-    }
-
-
-}
-
-
-async function getReleaseUpdater(options) {
-    try {
-        const octokit = new Octokit({
-            auth: gettoken,
-        })
-        const res = await octokit.request('GET /repos/{owner}/{repo}/releases/latest', {
-            ...options,
-            headers: {
-                'X-GitHub-Api-Version': '2022-11-28',
-            },
-        })
-
-        return res.data
-    }
-    catch (e) {
-        console.log('e:', e)
-    }
-}
-
-
-async function getID(options, latestJsonAsset, baseUrl) {
-    try {
-        const octokit = new Octokit({
-            auth: gettoken,
-        })
-        // 使用 GitHub API 直接获取私有资产
-        const res = await octokit.request('GET /repos/{owner}/{repo}/releases/assets/{asset_id}', {
-            ...options,
-            asset_id: latestJsonAsset.id,
-            headers: {
-                'Accept': 'application/octet-stream',
-                'X-GitHub-Api-Version': '2022-11-28',
-            },
-        })
-
-        // console.log('latestJsonAsset:->', latestJsonAsset)
-
-        // 使用字符串分割方式提取基础URL
-        // const urlParts = latestJsonAsset.browser_download_url.split('/')
-        // const baseUrl = urlParts.slice(0, -1).join('/')
-        console.log('基础URL:', baseUrl)
-        // 输出: https://github.com/supbose/vitesse-nuxt-tauri/releases/download/Vitesse-v0.0.12
-
-        // 确保数据是 Buffer 格式
-        const content = Buffer.isBuffer(res.data)
-            ? res.data
-            : Buffer.from(res.data)
-
-        // 将 Buffer 转换为字符串
-        let contentStr = content.toString('utf-8')
-
-        // 解析 JSON 内容以获取版本信息
-        let contentJson
-        try {
-            contentJson = JSON.parse(contentStr)
-        }
-        catch (parseError) {
-            console.error('解析 latest.json 失败:', parseError.message)
-            throw parseError
-        }
-
-        const version = contentJson.version || latestJsonAsset.version || 'unknown'
-        console.log('version:', version)
-
-        // 使用提取的基础URL进行替换
-        contentStr = contentStr.replace(
-            new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-            `https://cdn.ali.yiruan.wang/download/v${version}`,
-        )
-
-        // console.log('contentStr:', contentStr)
-
-        // 将修改后的内容转回 Buffer
-        // const modifiedContent = Buffer.from(contentStr, 'utf-8')
-
-        // 写入修改后的内容到文件
-        // fs.writeFileSync('latest.json', modifiedContent)
-        // console.log('已将 latest.json 内容写入到本地文件（已替换CDN链接）')
-
-        const outputDir = 'updateoutput';
-        // 确保输出目录存在
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-        }
-
-        // 构建完整的文件路径
-        const outputPath = path.join(outputDir, 'latest.json');
-
-        // 将修改后的内容转回 Buffer
-        const modifiedContent = Buffer.from(contentStr, 'utf-8')
-
-        // 写入修改后的内容到文件
-        fs.writeFileSync(outputPath, modifiedContent)
-        console.log(`已将 latest.json 内容写入到本地文件（已替换CDN链接）: ${outputDir}`)
-
-        // 设置输出变量，供后续步骤使用
-        core.setOutput('latest-json-path', outputDir);
-
-        const ftpHost = core.getInput('ftp-host');
-        const ftpUsername = core.getInput('ftp-username');
-        const ftpPassword = core.getInput('ftp-password');
-
-        await (0,dist_module.deploy)({
-            server: ftpHost,
-            username: ftpUsername,
-            password: ftpPassword,
-            'local-dir': joinPathEnd(outputDir),
-            'server-dir': '/updater/',
-            exclude: [...dist_module.excludeDefaults, 'dontDeployThisFolder/**']
-        }).then(() => {
-            console.log('🚀 Deploy done!');
-
-        }).catch((error) => {
-            console.error('🚀 Deploy failed:', error);
-
-        });
-
-
-
-
-
-
-
-
-
-    }
-    catch (error) {
-        console.error('通过 GitHub API 读取私有仓库 latest.json 失败:', error.message)
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-run();
-})();
-
-module.exports = __webpack_exports__;
+/***/ }),
+
+/***/ 4455:
+/***/ ((module) => {
+
+"use strict";
+module.exports = /*#__PURE__*/JSON.parse('{"name":"dotenv","version":"17.2.3","description":"Loads environment variables from .env file","main":"lib/main.js","types":"lib/main.d.ts","exports":{".":{"types":"./lib/main.d.ts","require":"./lib/main.js","default":"./lib/main.js"},"./config":"./config.js","./config.js":"./config.js","./lib/env-options":"./lib/env-options.js","./lib/env-options.js":"./lib/env-options.js","./lib/cli-options":"./lib/cli-options.js","./lib/cli-options.js":"./lib/cli-options.js","./package.json":"./package.json"},"scripts":{"dts-check":"tsc --project tests/types/tsconfig.json","lint":"standard","pretest":"npm run lint && npm run dts-check","test":"tap run tests/**/*.js --allow-empty-coverage --disable-coverage --timeout=60000","test:coverage":"tap run tests/**/*.js --show-full-coverage --timeout=60000 --coverage-report=text --coverage-report=lcov","prerelease":"npm test","release":"standard-version"},"repository":{"type":"git","url":"git://github.com/motdotla/dotenv.git"},"homepage":"https://github.com/motdotla/dotenv#readme","funding":"https://dotenvx.com","keywords":["dotenv","env",".env","environment","variables","config","settings"],"readmeFilename":"README.md","license":"BSD-2-Clause","devDependencies":{"@types/node":"^18.11.3","decache":"^4.6.2","sinon":"^14.0.1","standard":"^17.0.0","standard-version":"^9.5.0","tap":"^19.2.0","typescript":"^4.8.4"},"engines":{"node":">=12"},"browser":{"fs":false}}');
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __nccwpck_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		var threw = true;
+/******/ 		try {
+/******/ 			__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nccwpck_require__);
+/******/ 			threw = false;
+/******/ 		} finally {
+/******/ 			if(threw) delete __webpack_module_cache__[moduleId];
+/******/ 		}
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nccwpck_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat */
+/******/ 	
+/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(8643);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;

@@ -2,11 +2,14 @@
   "name": "up-actions",
   "version": "1.0.2",
   "description": "",
-  "main": "src/main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "package": "ncc build src/main.js -o dist",
+    "build": "tsc",
+    "package": "ncc build dist/main.js -o dist",
     "mbump": "mbump",
-    "build": "pnpm package && pnpm mbump"
+    "build:full": "pnpm build && pnpm package && pnpm mbump",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
@@ -17,7 +20,9 @@
   },
   "devDependencies": {
     "@mznjs/mbump": "^1.0.6",
-    "@vercel/ncc": "^0.38.4"
+    "@vercel/ncc": "^0.38.4",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
   },
   "keywords": [],
   "author": "supbose",
