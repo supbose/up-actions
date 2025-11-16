@@ -1,6 +1,10 @@
 # Changelog
 
 
+## v1.0.3
+
+[compare changes](https://github.com/supbose/up-actions/compare/v1.0.3-beta.4...v1.0.3)
+
 ## v1.0.3-beta.4
 
 [compare changes](https://github.com/supbose/up-actions/compare/v1.0.3-beta.3...v1.0.3-beta.4)
