@@ -9,7 +9,8 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
-    "@samkirkland/ftp-deploy": "^1.2.5"
+    "@samkirkland/ftp-deploy": "^1.2.5",
+    "dotenv": "^17.2.3"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.38.4"

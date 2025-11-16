@@ -2,6 +2,7 @@ const core = require('@actions/core');
 const fs = require('fs');
 const path = require('path');
 import { deploy, excludeDefaults } from '@samkirkland/ftp-deploy'
+import 'dotenv/config'
 // const Client = require('ftp');
 
 const gettoken = process.env.GITHUB_TOKEN;

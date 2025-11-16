@@ -17,6 +17,9 @@ importers:
       '@samkirkland/ftp-deploy':
         specifier: ^1.2.5
         version: 1.2.5
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
     devDependencies:
       '@vercel/ncc':
         specifier: ^0.38.4
@@ -159,6 +162,10 @@ packages:
 
   deprecation@2.3.1:
     resolution: {integrity: sha512-xmHIy4F3scKVwMsQ4WnVaS8bHOx0DmVwRywosKhaILI0ywMDWPtBSku2HNxRvF7jtwDRsoEwYQSfbxj8b7RlJQ==}
+
+  dotenv@17.2.3:
+    resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
+    engines: {node: '>=12'}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -397,6 +404,8 @@ snapshots:
   concat-map@0.0.1: {}
 
   deprecation@2.3.1: {}
+
+  dotenv@17.2.3: {}
 
   emoji-regex@8.0.0: {}
 
