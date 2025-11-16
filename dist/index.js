@@ -40319,7 +40319,35 @@ async function upLatest() {
         console.log(`Using repository info from environment/default: ${owner}/${repo}`);
         console.log("Note: In a real GitHub Actions environment, this would be automatically detected.");
     }
+    const options = { owner, repo };
 
+    console.log(options,'options')
+
+    const release = await getReleaseUpdater(options)
+
+    console.log('release:', release)
+
+
+}
+
+
+async function getReleaseUpdater(options) {
+    try {
+        const octokit = new Octokit({
+            auth: gettoken,
+        })
+        const res = await octokit.request('GET /repos/{owner}/{repo}/releases/latest', {
+            ...options,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28',
+            },
+        })
+
+        return res.data
+    }
+    catch (e) {
+        console.log('e:', e)
+    }
 }
 
 
