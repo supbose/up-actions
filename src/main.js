@@ -4,7 +4,7 @@ const path = require('path');
 import { deploy, excludeDefaults } from '@samkirkland/ftp-deploy'
 // const Client = require('ftp');
 
-const getEnv = process.env
+const gettoken = process.env.GITHUB_TOKEN;
 
 async function run() {
     try {
@@ -172,9 +172,9 @@ async function run() {
             console.log("✅ 使用插件触发上传最新版本文件");
         } else if (uploadLatest === 'use') {
             console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
-            console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${JSON.stringify(getEnv)}`);
+            console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${gettoken}`);
         }else if(githubToken){
-            console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${getEnv}`);
+            console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${githubToken}`);
         }else{
             console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
         }
