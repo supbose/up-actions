@@ -1,6 +1,7 @@
 const core = require('@actions/core');
 const fs = require('fs');
 const path = require('path');
+import { deploy, excludeDefaults } from '@samkirkland/ftp-deploy'
 // const Client = require('ftp');
 
 async function run() {
@@ -214,77 +215,18 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 // 上传文件到FTP服务器
 function uploadToFTP(localDir, ftpConfig) {
     return new Promise((resolve, reject) => {
-        const client = new Client();
-        let totalFiles = 0;
-        let uploadedFiles = 0;
-        let errorCount = 0;
 
-        client.on('ready', () => {
-            console.log(`Connected to FTP server: ${ftpConfig.host}`);
-            
-            // 确保远程目录存在
-            client.mkdir(ftpConfig.serverDir, true, (err) => {
-                if (err) {
-                    console.log(`Warning: Could not create remote directory: ${err.message}`);
-                }
-                
-                // 获取本地目录中的所有文件
-                const files = getAllFiles(localDir);
-                totalFiles = files.length;
-                
-                if (totalFiles === 0) {
-                    console.log("No files to upload");
-                    client.end();
-                    resolve();
-                    return;
-                }
-                
-                console.log(`Uploading ${totalFiles} files to ${ftpConfig.serverDir}...`);
-                
-                // 逐个上传文件
-                const uploadFile = (index) => {
-                    if (index >= files.length) {
-                        // 所有文件上传完成
-                        console.log(`FTP upload completed! Files uploaded: ${uploadedFiles}, Errors: ${errorCount}`);
-                        client.end();
-                        resolve();
-                        return;
-                    }
-                    
-                    const file = files[index];
-                    const fileName = path.basename(file);
-                    const remotePath = path.posix.join(ftpConfig.serverDir, fileName).replace(/\\/g, '/');
-                    
-                    client.put(file, remotePath, (err) => {
-                        if (err) {
-                            console.log(`ERROR uploading ${fileName}: ${err.message}`);
-                            errorCount++;
-                        } else {
-                            console.log(`Uploaded: ${fileName}`);
-                            uploadedFiles++;
-                        }
-                        
-                        // 上传下一个文件
-                        uploadFile(index + 1);
-                    });
-                };
-                
-                // 开始上传第一个文件
-                uploadFile(0);
-            });
-        });
-
-        client.on('error', (err) => {
-            console.log(`FTP connection error: ${err.message}`);
-            reject(new Error(`FTP connection failed: ${err.message}`));
-        });
-
-        // 连接到FTP服务器
-        client.connect({
-            host: ftpConfig.host,
-            user: ftpConfig.user,
-            password: ftpConfig.password
-        });
+        onsole.log('🚚 Deploy started')
+        deploy({
+            server: ftpConfig.host,
+            username: ftpConfig.user,
+            password: ftpConfig.password,
+            'local-dir': localDir,
+            'server-dir': ftpConfig.serverDir || '/',
+            exclude: [...excludeDefaults, 'dontDeployThisFolder/**']
+        })
+        console.log('🚀 Deploy done!')
+        
     });
 }
 
