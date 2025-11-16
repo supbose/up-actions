@@ -174,7 +174,7 @@ async function run() {
                         host: ftpHost,
                         user: ftpUsername,
                         password: ftpPassword,
-                        serverDir: joinPath(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
+                        serverDir: await joinPath(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
                     });
                     core.setOutput('ftp-upload-success', 'true');
                     console.log("Built-in FTP upload completed successfully");
