@@ -4,6 +4,8 @@ const path = require('path');
 import { deploy, excludeDefaults } from '@samkirkland/ftp-deploy'
 // const Client = require('ftp');
 
+const getEnv = process.env
+
 async function run() {
     try {
         // 获取输入参数
@@ -169,6 +171,10 @@ async function run() {
         } else if (uploadLatest === 'ci') {
             console.log("✅ 使用插件触发上传最新版本文件");
         } else if (uploadLatest === 'use') {
+            console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
+        }else if(githubToken){
+            console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${getEnv}`);
+        }else{
             console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
         }
 
