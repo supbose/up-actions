@@ -1,6 +1,17 @@
 # Changelog
 
 
+## v1.1.0
+
+[compare changes](https://github.com/supbose/up-actions/compare/v1.0.3...v1.1.0)
+
+### 📖 文档
+
+- 简化README内容并更新使用说明 ([6cef5da](https://github.com/supbose/up-actions/commit/6cef5da))
+- **readme:** 更新许可证文件路径链接 ([ad1fad3](https://github.com/supbose/up-actions/commit/ad1fad3))
+- 修正README中LICENSE文件的路径格式 ([523ea4a](https://github.com/supbose/up-actions/commit/523ea4a))
+- **up-actions:** 删除 UP Actions 使用说明文档 ([16ca7e2](https://github.com/supbose/up-actions/commit/16ca7e2))
+
 ## v1.0.3
 
 [compare changes](https://github.com/supbose/up-actions/compare/v1.0.3-beta.4...v1.0.3)
