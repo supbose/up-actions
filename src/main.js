@@ -335,6 +335,32 @@ async function upLatest() {
     console.log('release:', release)
 
 
+    // console.log('release:', release)
+    // 查找 latest.json 资源
+    const latestJsonAsset = release.assets.find(asset => asset.name === 'latest.json')
+
+    // console.log('latestJsonAsset', latestJsonAsset)
+
+    // 使用字符串分割方式提取基础URL
+    const urlParts = latestJsonAsset.browser_download_url.split('/')
+    const baseUrl = urlParts.slice(0, -1).join('/')
+
+    // 分别提取 owner 和 repo
+    // const match = baseUrl.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)/)
+    // const _owner = match?.[1] || ''
+    // const _repo = match?.[2] || ''
+
+    // console.log('owner:', _owner)
+    // console.log('repo:', _repo)
+
+    if (latestJsonAsset) {
+        await getID(options, latestJsonAsset, baseUrl)
+    }
+    else {
+        console.log('未找到 latest.json 文件')
+    }
+
+
 }
 
 
@@ -357,6 +383,67 @@ async function getReleaseUpdater(options) {
     }
 }
 
+
+async function getID(options, latestJsonAsset, baseUrl) {
+    try {
+        // 使用 GitHub API 直接获取私有资产
+        const res = await octokit.request('GET /repos/{owner}/{repo}/releases/assets/{asset_id}', {
+            ...options,
+            asset_id: latestJsonAsset.id,
+            headers: {
+                'Accept': 'application/octet-stream',
+                'X-GitHub-Api-Version': '2022-11-28',
+            },
+        })
+
+        // console.log('latestJsonAsset:->', latestJsonAsset)
+
+        // 使用字符串分割方式提取基础URL
+        // const urlParts = latestJsonAsset.browser_download_url.split('/')
+        // const baseUrl = urlParts.slice(0, -1).join('/')
+        console.log('基础URL:', baseUrl)
+        // 输出: https://github.com/supbose/vitesse-nuxt-tauri/releases/download/Vitesse-v0.0.12
+
+        // 确保数据是 Buffer 格式
+        const content = Buffer.isBuffer(res.data)
+            ? res.data
+            : Buffer.from(res.data)
+
+        // 将 Buffer 转换为字符串
+        let contentStr = content.toString('utf-8')
+
+        // 解析 JSON 内容以获取版本信息
+        let contentJson
+        try {
+            contentJson = JSON.parse(contentStr)
+        }
+        catch (parseError) {
+            console.error('解析 latest.json 失败:', parseError.message)
+            throw parseError
+        }
+
+        const version = contentJson.version || latestJsonAsset.version || 'unknown'
+        console.log('version:', version)        
+
+        // 使用提取的基础URL进行替换
+        contentStr = contentStr.replace(
+            new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+            `https://cdn.ali.yiruan.wang/uploads/v${version}`,
+        )
+        
+        console.log('contentStr:', contentStr)
+
+        // 将修改后的内容转回 Buffer
+        const modifiedContent = Buffer.from(contentStr, 'utf-8')
+
+        // 写入修改后的内容到文件
+        fs.writeFileSync('latest.json', modifiedContent)
+        console.log('已将 latest.json 内容写入到本地文件（已替换CDN链接）')
+    }
+    catch (error) {
+        console.error('通过 GitHub API 读取私有仓库 latest.json 失败:', error.message)
+    }
+}
 
 
 
