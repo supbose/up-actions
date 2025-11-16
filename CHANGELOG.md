@@ -1,6 +1,14 @@
 # Changelog
 
 
+## v1.0.3-beta.3
+
+[compare changes](https://github.com/supbose/up-actions/compare/v1.0.3-beta.2...v1.0.3-beta.3)
+
+### 🚀 特性
+
+- **update:** 添加更新内容日志输出 ([df6d712](https://github.com/supbose/up-actions/commit/df6d712))
+
 ## v1.0.3-beta.2
 
 [compare changes](https://github.com/supbose/up-actions/compare/v1.0.3-beta.1...v1.0.3-beta.2)
