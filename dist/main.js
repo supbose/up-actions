@@ -333,6 +333,7 @@ async function updateAndUploadLatestJson(release, targetVersion) {
         }
         const version = contentJson.version || targetVersion;
         console.log('Version:', version);
+        console.log('Content JSON:', contentJson);
         const updatedContent = contentStr.replace(new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `https://cdn.ali.yiruan.wang/download/v${version}`);
         console.log('Updated Content:', updatedContent);
         const outputDir = 'updateoutput';

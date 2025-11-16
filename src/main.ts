@@ -426,6 +426,8 @@ async function updateAndUploadLatestJson(release: Release, targetVersion: string
     const version = contentJson.version || targetVersion;
     console.log('Version:', version);
 
+    console.log('Content JSON:', contentJson);
+
     // Replace base URL with CDN URL
     const updatedContent = contentStr.replace(
       new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
