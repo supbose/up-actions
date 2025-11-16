@@ -1,19 +1,26 @@
-name: '我的自定义操作'
-description: '一个示例自定义 GitHub Action'
-author: 'supbose'
-
+name: '复制构建文件到发布目录'
+description: '将Tauri构建文件复制到带版本号的发布目录'
 inputs:
-  message:
-    description: '要输出的消息'
+  source-dir:
+    description: '包含打包文件的源目录'
     required: false
-    default: 'Hello World'
-  file-path:
-    description: '文件路径'
+    default: 'src-tauri/target/release/bundle/'
+  target-root:
+    description: '发布文件的目标根目录'
     required: false
+    default: 'src-tauri/target/release/fabu/'
+  config-file:
+    description: 'tauri.conf.json 文件的路径'
+    required: false
+    default: 'src-tauri/tauri.conf.json'
 
 outputs:
-  result:
-    description: '操作结果'
+  version:
+    description: '从配置文件中提取的应用版本'
+    value: ${{ steps.extract-version.outputs.version }}
+  target-dir:
+    description: '带版本号的目标目录完整路径'
+    value: ${{ steps.create-target-dir.outputs.target_dir }}
 
 runs:
   using: 'node16'
