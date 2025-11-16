@@ -30,6 +30,10 @@ inputs:
     description: 'Remote directory on FTP server'
     required: false
     default: ''
+  upload-latest:
+    description: '是否上传Latest版本到FTP服务器'
+    required: false
+    default: 'disabled'
 
 outputs:
   version:
@@ -47,4 +51,4 @@ outputs:
 
 runs:
   using: 'node16'
-  main: 'dist/index.js'
+  main: 'index.js'

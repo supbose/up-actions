@@ -15,6 +15,7 @@ async function run() {
         const ftpUsername = core.getInput('ftp-username');
         const ftpPassword = core.getInput('ftp-password');
         const ftpServerDir = core.getInput('ftp-server-dir');
+        const uploadLatest = core.getInput('upload-latest'); // 新增参数
 
         // 验证 enable-ftp 参数值
         if (!['disabled', 'ci', 'use'].includes(enableFtp)) {
@@ -150,6 +151,14 @@ async function run() {
             console.log(`Warning: Failed to verify copied files: ${error.message}`);
         }
 
+        if (uploadLatest === 'disabled') {
+            console.log(`✅ 不需要上传最新版本文件`);
+        } else if (uploadLatest === 'ci') {
+            console.log("✅ 使用插件触发上传最新版本文件");
+        } else if (uploadLatest === 'use') {
+            console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
+        }
+
         // 根据 enable-ftp 的值决定FTP行为
         switch (enableFtp) {
             case 'disabled':
@@ -177,7 +186,13 @@ async function run() {
                         serverDir: joinPathEnd(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
                     });
                     core.setOutput('ftp-upload-success', 'true');
-                    console.log("Built-in FTP upload completed successfully");
+                    // 显示统一提示消息
+                    if (uploadLatest === 'use') {
+                        console.log(`✅ --------------------------------`);
+                        console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
+                        console.log(`✅ --------------------------------`);
+                    }
+                   
                 } catch (error) {
                     core.setOutput('ftp-upload-success', 'false');
                     core.setFailed(`Built-in FTP upload failed: ${error.message}`);
@@ -215,8 +230,8 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 // 上传文件到FTP服务器
 function uploadToFTP(localDir, ftpConfig) {
     return new Promise((resolve, reject) => {
-
-        console.log('🚚 Deploy started')
+        console.log('🚚 Deploy started');
+        
         deploy({
             server: ftpConfig.host,
             username: ftpConfig.user,
@@ -224,9 +239,12 @@ function uploadToFTP(localDir, ftpConfig) {
             'local-dir': joinPathEnd(localDir),
             'server-dir': ftpConfig.serverDir,
             exclude: [...excludeDefaults, 'dontDeployThisFolder/**']
-        })
-        console.log('🚀 Deploy done!')
-        
+        }).then(() => {
+            console.log('🚀 Deploy done!');
+            resolve();
+        }).catch((error) => {
+            reject(error);
+        });
     });
 }
 
@@ -237,7 +255,9 @@ function joinPath(dir= '/') {
     }
     return '/'
 }
+
 function joinPathEnd(dir = '/') {
     return dir && !dir.endsWith('/') ? dir + '/' : dir || '/';
 }
+
 run();
