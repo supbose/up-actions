@@ -40325,7 +40325,7 @@ async function upLatest() {
 
     const release = await getReleaseUpdater(options)
 
-    console.log('release:', release)
+    // console.log('release:', release)
 
 
     // console.log('release:', release)
@@ -40427,7 +40427,7 @@ async function getID(options, latestJsonAsset, baseUrl) {
             `https://cdn.ali.yiruan.wang/uploads/v${version}`,
         )
 
-        console.log('contentStr:', contentStr)
+        // console.log('contentStr:', contentStr)
 
         // 将修改后的内容转回 Buffer
         // const modifiedContent = Buffer.from(contentStr, 'utf-8')
@@ -40450,11 +40450,11 @@ async function getID(options, latestJsonAsset, baseUrl) {
 
         // 写入修改后的内容到文件
         fs.writeFileSync(outputPath, modifiedContent)
-        console.log(`已将 latest.json 内容写入到本地文件（已替换CDN链接）: ${outputPath}`)
+        console.log(`已将 latest.json 内容写入到本地文件（已替换CDN链接）: ${updateoutput}`)
 
         // 设置输出变量，供后续步骤使用
-        core.setOutput('latest-json-path', outputPath);
-        
+        core.setOutput('latest-json-path', updateoutput);
+
         const ftpHost = core.getInput('ftp-host');
         const ftpUsername = core.getInput('ftp-username');
         const ftpPassword = core.getInput('ftp-password');
@@ -40463,7 +40463,7 @@ async function getID(options, latestJsonAsset, baseUrl) {
             server: ftpHost,
             username: ftpUsername,
             password: ftpPassword,
-            'local-dir': joinPathEnd(outputPath),
+            'local-dir': joinPathEnd(updateoutput),
             'server-dir': '/vitesse-nuxt-tauri/',
             exclude: [...dist_module.excludeDefaults, 'dontDeployThisFolder/**']
         }).then(() => {
