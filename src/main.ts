@@ -432,6 +432,8 @@ async function updateAndUploadLatestJson(release: Release, targetVersion: string
       `https://cdn.ali.yiruan.wang/download/v${version}`
     );
 
+
+    console.log('Updated Content:', updatedContent);
     // Save updated content to file
     const outputDir = 'updateoutput';
     if (!createDirectory(outputDir)) {

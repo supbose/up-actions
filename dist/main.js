@@ -334,6 +334,7 @@ async function updateAndUploadLatestJson(release, targetVersion) {
         const version = contentJson.version || targetVersion;
         console.log('Version:', version);
         const updatedContent = contentStr.replace(new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `https://cdn.ali.yiruan.wang/download/v${version}`);
+        console.log('Updated Content:', updatedContent);
         const outputDir = 'updateoutput';
         if (!createDirectory(outputDir)) {
             throw new Error(`Failed to create output directory: ${outputDir}`);
