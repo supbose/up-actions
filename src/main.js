@@ -174,7 +174,7 @@ async function run() {
                         host: ftpHost,
                         user: ftpUsername,
                         password: ftpPassword,
-                        serverDir: `ftpServerDir/v${version}/` || `uploads/v${version}/`
+                        serverDir: joinPath(ftpServerDir) + `v${version}/` || `uploads/v${version}/`
                     });
                     core.setOutput('ftp-upload-success', 'true');
                     console.log("Built-in FTP upload completed successfully");
@@ -226,7 +226,7 @@ function uploadToFTP(localDir, ftpConfig) {
             username: ftpConfig.user,
             password: ftpConfig.password,
             'local-dir': joinPath(localDir),
-            'server-dir': joinPath(ftpConfig.serverDir),
+            'server-dir': ftpConfig.serverDir,
             exclude: [...excludeDefaults, 'dontDeployThisFolder/**']
         })
         console.log('🚀 Deploy done!')
