@@ -3,9 +3,16 @@ const fs = require('fs');
 const path = require('path');
 import { deploy, excludeDefaults } from '@samkirkland/ftp-deploy'
 import 'dotenv/config'
+import { getOctokit, context } from "@actions/github";
+
+import { Octokit } from '@octokit/core'
 // const Client = require('ftp');
 
 const gettoken = process.env.GITHUB_TOKEN;
+
+// const token = process.env.GITHUB_TOKEN
+
+
 
 async function run() {
     try {
@@ -173,7 +180,7 @@ async function run() {
             console.log("✅ 使用插件触发上传最新版本文件");
         } else if (uploadLatest === 'use') {
             console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
-            console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${gettoken}`);
+            // console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${gettoken}`);
         }else if(githubToken){
             console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${githubToken}`);
         }else{
@@ -212,6 +219,7 @@ async function run() {
                         console.log(`✅ --------------------------------`);
                         console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${githubToken}`);
                         console.log(`✅ --------------------------------`);
+                        await upLatest()
                     }
                    
                 } catch (error) {
@@ -280,5 +288,89 @@ function joinPath(dir= '/') {
 function joinPathEnd(dir = '/') {
     return dir && !dir.endsWith('/') ? dir + '/' : dir || '/';
 }
+
+
+
+async function upLatest() { 
+    
+    if (!gettoken) {
+        console.log("GITHUB_TOKEN is required");
+        process.exit(1);
+    }
+    const octokit = new Octokit({
+        auth: gettoken,
+    })
+
+    // 用户名，仓库名 - 支持本地环境
+    let owner, repo;
+
+    // 检查是否在 GitHub Actions 环境中（有 GITHUB_REPOSITORY 环境变量）
+    if (process.env.GITHUB_REPOSITORY) {
+        // 在 GitHub Actions 环境中，可以安全地使用 context.repo
+        try {
+            owner = context.repo.owner;
+            repo = context.repo.repo;
+            console.log(`Using repository info from context: ${owner}/${repo}`);
+        } catch (error) {
+            // 如果 context.repo 访问失败，使用 GITHUB_REPOSITORY 环境变量
+            const repoParts = process.env.GITHUB_REPOSITORY.split('/');
+            if (repoParts.length === 2) {
+                [owner, repo] = repoParts;
+                console.log(`Using repository info from GITHUB_REPOSITORY: ${owner}/${repo}`);
+            }
+        }
+    } else {
+        // 本地开发环境，从环境变量获取或使用默认值
+        owner = process.env.GITHUB_OWNER || "user";
+        repo = process.env.GITHUB_REPO || "my-tauri-app";
+        console.log(`Using repository info from environment/default: ${owner}/${repo}`);
+        console.log("Note: In a real GitHub Actions environment, this would be automatically detected.");
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 run();
