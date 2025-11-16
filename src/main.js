@@ -181,9 +181,9 @@ async function run() {
         } else if (uploadLatest === 'use') {
             console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
             // console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${gettoken}`);
-        }else if(githubToken){
+        } else if (githubToken) {
             console.log(`✅ 使用内置FTP上传功能上传最新版本文件Token: ${githubToken}`);
-        }else{
+        } else {
             console.log(`✅ 使用内置FTP上传功能上传最新版本文件`);
         }
 
@@ -193,19 +193,19 @@ async function run() {
                 console.log("FTP is disabled.");
                 core.setOutput('ftp-upload-success', 'disabled');
                 break;
-                
+
             case 'ci':
                 console.log("FTP is enabled for external CI step.");
                 core.setOutput('ftp-upload-success', 'external');
                 break;
-                
+
             case 'use':
                 console.log("FTP is enabled and using built-in FTP upload functionality...");
                 if (!ftpHost || !ftpUsername || !ftpPassword) {
                     core.setFailed("FTP credentials are required when enable-ftp is set to 'use'");
                     return;
                 }
-                
+
                 try {
                     await uploadToFTP(targetDir, {
                         host: ftpHost,
@@ -221,14 +221,14 @@ async function run() {
                         console.log(`✅ --------------------------------`);
                         await upLatest()
                     }
-                   
+
                 } catch (error) {
                     core.setOutput('ftp-upload-success', 'false');
                     core.setFailed(`Built-in FTP upload failed: ${error.message}`);
                     return;
                 }
                 break;
-                
+
             default:
                 core.setFailed(`Invalid enable-ftp value: ${enableFtp}`);
                 return;
@@ -260,7 +260,7 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 function uploadToFTP(localDir, ftpConfig) {
     return new Promise((resolve, reject) => {
         console.log('🚚 Deploy started');
-        
+
         deploy({
             server: ftpConfig.host,
             username: ftpConfig.user,
@@ -277,7 +277,7 @@ function uploadToFTP(localDir, ftpConfig) {
     });
 }
 
-function joinPath(dir= '/') {
+function joinPath(dir = '/') {
     if (dir !== '/') {
         // 移除现有的前后斜杠，然后重新加上
         return `/${dir.replace(/^\/+|\/+$/g, '')}/`
@@ -291,8 +291,8 @@ function joinPathEnd(dir = '/') {
 
 
 
-async function upLatest() { 
-    
+async function upLatest() {
+
     if (!gettoken) {
         console.log("GITHUB_TOKEN is required");
         process.exit(1);
@@ -328,7 +328,7 @@ async function upLatest() {
     }
     const options = { owner, repo };
 
-    console.log(options,'options')
+    console.log(options, 'options')
 
     const release = await getReleaseUpdater(options)
 
@@ -426,22 +426,69 @@ async function getID(options, latestJsonAsset, baseUrl) {
         }
 
         const version = contentJson.version || latestJsonAsset.version || 'unknown'
-        console.log('version:', version)        
+        console.log('version:', version)
 
         // 使用提取的基础URL进行替换
         contentStr = contentStr.replace(
             new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
             `https://cdn.ali.yiruan.wang/uploads/v${version}`,
         )
-        
+
         console.log('contentStr:', contentStr)
+
+        // 将修改后的内容转回 Buffer
+        // const modifiedContent = Buffer.from(contentStr, 'utf-8')
+
+        // 写入修改后的内容到文件
+        // fs.writeFileSync('latest.json', modifiedContent)
+        // console.log('已将 latest.json 内容写入到本地文件（已替换CDN链接）')
+
+        const outputDir = 'updateoutput';
+        // 确保输出目录存在
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        // 构建完整的文件路径
+        const outputPath = path.join(outputDir, 'latest.json');
 
         // 将修改后的内容转回 Buffer
         const modifiedContent = Buffer.from(contentStr, 'utf-8')
 
         // 写入修改后的内容到文件
-        fs.writeFileSync('latest.json', modifiedContent)
-        console.log('已将 latest.json 内容写入到本地文件（已替换CDN链接）')
+        fs.writeFileSync(outputPath, modifiedContent)
+        console.log(`已将 latest.json 内容写入到本地文件（已替换CDN链接）: ${outputPath}`)
+
+        // 设置输出变量，供后续步骤使用
+        core.setOutput('latest-json-path', outputPath);
+        
+        const ftpHost = core.getInput('ftp-host');
+        const ftpUsername = core.getInput('ftp-username');
+        const ftpPassword = core.getInput('ftp-password');
+
+        await deploy({
+            server: ftpHost,
+            username: ftpUsername,
+            password: ftpPassword,
+            'local-dir': joinPathEnd(outputPath),
+            'server-dir': '/vitesse-nuxt-tauri/',
+            exclude: [...excludeDefaults, 'dontDeployThisFolder/**']
+        }).then(() => {
+            console.log('🚀 Deploy done!');
+
+        }).catch((error) => {
+            console.error('🚀 Deploy failed:', error);
+
+        });
+
+
+
+
+
+
+
+
+
     }
     catch (error) {
         console.error('通过 GitHub API 读取私有仓库 latest.json 失败:', error.message)

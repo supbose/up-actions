@@ -53,6 +53,9 @@ outputs:
   ftp-upload-success:
     description: 'FTP upload result (disabled/external/true/false)'
     value: ${{ steps.main.outputs.ftp-upload-success }}
+  latest-json-path:
+    description: 'Path to the latest.json file'
+    value: ${{ steps.main.outputs.latest-json-path }}
 
 runs:
   using: 'node16'
